@@ -1,0 +1,8 @@
+__pycache__/
+.venv/
+*.pdf
+*.docx
+*.pptx
+parsed/
+embeddings/
+vector_store/

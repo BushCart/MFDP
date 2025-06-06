@@ -1,0 +1,14 @@
+pymupdf==1.25.5
+python-docx==1.1.2
+python-pptx==1.0.2
+langchain-text-splitters==0.3.8
+sentence-transformers==4.1.0
+faiss-cpu==1.7.4    
+tiktoken==0.9.0
+
+numpy<2
+
+ollama
+scikit-learn 
+
+# Протестировано с Python 3.10
