@@ -16,8 +16,8 @@ def parse_pdf(path: str) -> list[dict]:
             })
     return result
 
-#if __name__ == "__main__":
+if __name__ == "__main__":
     from pprint import pprint
 
-    result = parse_pdf("data/raw/test_1.pdf")  # замени на свой путь
-    pprint(result[:2])  # покажет первые 2 чанка
+    result = parse_pdf("data/raw/test_1.pdf")
+    pprint(result[:2])

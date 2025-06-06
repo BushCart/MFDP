@@ -15,13 +15,7 @@ def parse_pptx(path: str) -> list[dict]:
             result.append({
                 "text": "\n".join(texts),
                 "source": Path(path).name,
-                "page": i  # слайды считаем как страницы
+                "page": i
             })
 
     return result
-
-#if __name__ == "__main__":
-    from pprint import pprint
-
-    result = parse_pptx("data/raw/test_1.pptx")  # замени на свой путь
-    pprint(result[:2])  # покажет первые 2 чанка
