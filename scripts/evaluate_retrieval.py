@@ -12,7 +12,7 @@ def evaluate_all(k: int = 5) -> pd.DataFrame:
             break
 
         found_chunks = search(question, top_k=5)
-        found_set    = set((Path(r["source"]).name, str(r["page"])) for r in found_chunks)
+        found_set = set((Path(r["source"]).name, str(r["page"])) for r in found_chunks)
         relevant_set = set((Path(r["source"]).name, str(r["page"])) for r in relevant_chunks)
 
         print("Вопрос:", question)
