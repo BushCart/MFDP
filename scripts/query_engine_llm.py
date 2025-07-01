@@ -141,7 +141,7 @@ def generate_answer(
 
         return answer, confidence, sources
 
-    except Exception as e:
+    except Exception:
         return (
             "[✗] Ошибка при обращении к LLM. Попробуйте позже.",
             "🔴 Уверенность: неизвестна",
