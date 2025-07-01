@@ -1,14 +1,14 @@
 import pandas as pd
 from pathlib import Path
 from tests.gold_standard import GOLD_STANDARD
-from scripts.query_engine_llm import search 
+from scripts.query_engine_llm import search
 
 def evaluate_all(k: int = 5) -> pd.DataFrame:
     records = []
     from pprint import pprint
 
     for i, (question, relevant_chunks) in enumerate(GOLD_STANDARD.items()):
-        if i > 0:  # протестируем только первый вопрос
+        if i > 0:
             break
 
         found_chunks = search(question, top_k=5)
@@ -25,8 +25,8 @@ def evaluate_all(k: int = 5) -> pd.DataFrame:
 
     for question, relevant in GOLD_STANDARD.items():
         found = search(question, top_k=k)
-        found_set     = set((Path(r["source"]).name, str(r["page"])) for r in found_chunks)
-        relevant_set  = set((Path(r["source"]).name, str(r["page"])) for r in relevant_chunks)
+        found_set = set((Path(r["source"]).name, str(r["page"])) for r in found_chunks)
+        relevant_set = set((Path(r["source"]).name, str(r["page"])) for r in relevant_chunks)
         p = len(found_set & relevant_set) / k
         rr = 0.0
         for idx, r in enumerate(found, 1):
