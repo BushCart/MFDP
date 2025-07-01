@@ -1,18 +1,20 @@
-import time
 import gradio as gr
+from scripts.query_engine_llm import generate_answer
 
-def slow_echo(message, history):
-    for i in range(len(message)):
-        time.sleep(0.05)
-        yield "You typed: " + message[: i + 1]
+def respond(user_message, chat_history):
+    answer, confidence, sources = generate_answer(user_message)
+    bot_message = (
+        f"{answer}\n\n"
+        f"{confidence}\n\n"
+        f"Источники:\n" + "\n".join(sources)
+    )
+    return "", chat_history + [(user_message, bot_message)]
 
-demo = gr.ChatInterface(
-    slow_echo,
-    type="messages",
-    flagging_mode="manual",
-    flagging_options=["Like", "Spam", "Inappropriate", "Other"],
-    save_history=True,
-)
+with gr.Blocks() as demo:
+    gr.Markdown("## Askwise Chat")
+    chatbot = gr.Chatbot()
+    user_input = gr.Textbox(placeholder="Введите вопрос…", show_label=False)
+    user_input.submit(respond, [user_input, chatbot], [user_input, chatbot])
 
 if __name__ == "__main__":
     demo.launch()

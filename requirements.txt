@@ -5,10 +5,10 @@ langchain-text-splitters==0.3.8
 sentence-transformers==4.1.0
 faiss-cpu==1.7.4    
 tiktoken==0.9.0
-
+flake8==7.3.0
+pandas==2.2.3
+tabulate==0.9.0
+gradio==5.31.0
 numpy<2
-
-ollama
 scikit-learn 
-
-# Протестировано с Python 3.10
+ollama

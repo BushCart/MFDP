@@ -77,6 +77,7 @@ MFDP/
 ├── embeddings/           # Векторные представления
 ├── vector_store/         # FAISS + метаданные
 ├── tests/                # Тесты
+├── .flake8
 └── requirements.txt
 ```
 

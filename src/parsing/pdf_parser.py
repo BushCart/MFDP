@@ -1,6 +1,7 @@
 import fitz
 from pathlib import Path
 
+
 def parse_pdf(path: str) -> list[dict]:
     doc = fitz.open(path)
     result = []
@@ -12,9 +13,10 @@ def parse_pdf(path: str) -> list[dict]:
                 "text": text,
                 "source": Path(path).name,
                 "page": page_num + 1
-                
+
             })
     return result
+
 
 if __name__ == "__main__":
     from pprint import pprint

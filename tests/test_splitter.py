@@ -2,11 +2,25 @@ from src.chunking.simple_splitter import text_splitter
 
 
 def test_returns_list_of_dicts():
-    text = "Это предложение. Вот второе. И ещё одно."
+    text = "Катя побежала. За спиной ее грохнул залп. Одна из пуль просвистела возле виска, другая вырвала клок из рукава полушубка."
     result = text_splitter(text, max_length=50, overlap=10)
     assert isinstance(result, list)
     assert all(isinstance(chunk, dict) for chunk in result)
     assert all("text" in chunk and "chunk_id" in chunk for chunk in result)
+
+
+def test_split_ends_on_punctuation():
+    text = "У домика одна стена короткая, одна подлиннее. Зовет в гости, поиграть в саду!"\
+    "В беседке, увитой виноградом, сидит серый человек — папа. В папе сидит рак."
+    result = text_splitter(text, max_length=20, overlap=0)
+    assert "." in result[0]["text"] or "!" in result[0]["text"], "Чанк не обрезан по знаку препинания"
+
+
+def test_no_negative_overlap():
+    text = "Hello World. " * 20
+    result = text_splitter(text, max_length=50, overlap=10)
+    for chunk in result:
+        assert len(chunk["text"]) > 0
 
 
 def test_short_text_returns_one_chunk():

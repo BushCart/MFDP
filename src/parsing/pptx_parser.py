@@ -1,6 +1,7 @@
 from pptx import Presentation
 from pathlib import Path
 
+
 def parse_pptx(path: str) -> list[dict]:
     prs = Presentation(path)
     result = []

@@ -19,7 +19,7 @@ results = []
 for file in INPUT_DIR.iterdir():
     ext = file.suffix.lower()
 
-    if ext == ".doc": # not in
+    if ext == ".doc":
         print(f"[!] Пропущен файл '{file.name}': формат .doc не поддерживается. Сконвертируйте в .docx.")
         continue
 
@@ -28,7 +28,7 @@ for file in INPUT_DIR.iterdir():
         print(f"[*] Обработка: {file.name}")
         row_blocks = parser(str(file))
         for row in row_blocks:
-            buffer_chunk = text_splitter(row["text"]) 
+            buffer_chunk = text_splitter(row["text"])
             for ch in buffer_chunk:
                 ch.update({
                     "source": row["source"],

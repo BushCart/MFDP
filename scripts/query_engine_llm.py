@@ -1,32 +1,63 @@
 from sentence_transformers import SentenceTransformer
 import faiss
-import numpy as np
 import pickle
 from pathlib import Path
 from ollama import Client
 import tiktoken
 
-# Параметры
 INDEX_PATH = Path("vector_store/faiss.index")
 META_PATH = Path("vector_store/metadata.pkl")
 MAX_TOKENS = 1500
+
 ollama = Client(host="http://localhost:11434")
-
-
-# Загрузка модели и индекса
 embedder = SentenceTransformer('intfloat/multilingual-e5-base')
 index = faiss.read_index(str(INDEX_PATH))
 enc = tiktoken.get_encoding("cl100k_base")
 
-# Загрузка метаданных
 with META_PATH.open("rb") as f:
     metadata = pickle.load(f)
 
-# Подсчет токенов для ограничения контекста
+
 def count_tokens(text: str) -> int:
     return len(enc.encode(text))
 
-# Оценка уверенности по минимальному расстоянию
+def rerank(query: str, candidates: list[dict], top_k: int = 5) -> list[dict]:
+    scored = []
+    system_prompt = (
+        "Ты — автоматическая система оценки релевантности. "
+        "Отвечай СТРОГО только числом от 0 до 1 (дробное число с точкой), ничего кроме числа. "
+        "Никаких объяснений, комментариев или других символов. "
+        "Если фрагмент не содержит полезной информации — 0. Если очень релевантен — 1."
+    )
+
+    for candidate in candidates:
+        prompt = (
+            f"Вопрос: {query}\n\n"
+            f"Текст: {candidate['text']}\n\n"
+            f"Оценка релевантности (0-1):"
+        )
+        try:
+            resp = ollama.chat(
+                model="mistral",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt}
+                ]
+            )
+            score_str = resp['message']['content'].strip()
+            score = float(score_str)
+        except Exception as e:
+            print(f"[!] Ошибка при rerank: {e}")
+            score = 0.0
+        
+        candidate_with_score = candidate.copy()
+        candidate_with_score["score"] = score
+        scored.append(candidate_with_score)
+    
+    scored_sorted = sorted(scored, key=lambda x: x["score"], reverse=True)
+    return scored_sorted[:top_k]
+
+
 def get_confidence(filtered: list[dict]) -> str:
     min_dist = min(r["distance"] for r in filtered)
     if min_dist < 0.35:
@@ -36,7 +67,6 @@ def get_confidence(filtered: list[dict]) -> str:
     else:
         return "🔴 Уверенность: низкая"
 
-# Построение контекста с ограничением по токенам
 def build_context(filtered: list[dict]) -> tuple[str, list[dict]]:
     context_chunks = []
     token_total = 0
@@ -50,15 +80,12 @@ def build_context(filtered: list[dict]) -> tuple[str, list[dict]]:
         token_total += tokens
         used.append({
             "page": r["page"],
-            "id": r["id"],
+            "id":   r["id"],
             "source": r["source"]
         })
 
-
     return "\n---\n".join(context_chunks), used
 
-
-# Поиск релевантных чанков
 def search(query: str, top_k: int = 5) -> list[dict]:
     query_vec = embedder.encode(["query: " + query]).astype("float32")
     distances, ids = index.search(query_vec, top_k)
@@ -67,48 +94,68 @@ def search(query: str, top_k: int = 5) -> list[dict]:
     for idx, dist in zip(ids[0], distances[0]):
         meta = metadata[idx]
         results.append({
-            "id": idx,
+            "id":       idx,
             "distance": float(dist),
-            "text": meta.get("text", ""),
-            "source": meta.get("source", ""),
-            "page": meta.get("page", "?")
+            "text":     meta.get("text", ""),
+            "source":   meta.get("source", ""),
+            "page":     meta.get("page", "?")
         })
     return results
 
-# Основной пайплайн: поиск + генерация
-def search_with_llm(query: str, top_k: int = 5):
-    results = search(query, top_k)
-    filtered = [r for r in results if r["distance"] < 0.5]
 
-    if not filtered:
-        print("🔴 Подходящих фрагментов не найдено. Ответ не сформирован.")
-        return
-
-    confidence = get_confidence(filtered)
-    context, used_chunks = build_context(filtered)
-
-    system = "Ты — технический ассистент. Отвечай по делу, кратко, без выдумок. Используй только приведённый контекст. Ты отвечаешь строго на русском языке."
-    prompt = f"Контекст:\n{context}\n\nВопрос: {query}\n\nОтвет:"
-
+def generate_answer(
+    question: str,
+    search_k: int = 10,
+    rerank_k: int = 5
+):
     try:
-        response = ollama.chat(
+        results = search(question, top_k=search_k)
+        reranked = rerank(question, results, top_k=rerank_k)
+
+        if not reranked:
+            print("🔴 Подходящих фрагментов не найдено. Ответ не сформирован.")
+            return
+
+        confidence = get_confidence(reranked)
+        context, used_chunks = build_context(reranked)
+        system = (
+            "Ты — технический ассистент. "
+            "Отвечай одним абзацем, исключительно связным текстом — **никаких списков или маркеров**. "
+            "Без повторения контекста, только ответ."
+        )
+        prompt = f"Контекст:\n{context}\n\nВопрос: {question}\n\nОтвет:"
+
+        resp = ollama.chat(
             model="mistral",
             messages=[
                 {"role": "system", "content": system},
-                {"role": "user", "content": prompt}
+                {"role": "user",   "content": prompt}
             ]
         )
-        print(f"\n🔍 Ответ ({confidence}):\n" + response['message']['content'])
-        print("\n📚 Использованные источники:")
-        for s in used_chunks:
-            print(f"- {s['source']} стр. {s['page']} (id={s['id']})")
+        answer = resp['message']['content'].strip()
+
+        sources = [
+            f"{chunk['source']} — стр. {chunk['page']}"
+            for chunk in used_chunks
+        ]
+
+        return answer, confidence, sources
 
     except Exception as e:
-        print("[✗] Ошибка при обращении к Ollama:")
-        print(repr(e))
-        print("\n[✎] Последний prompt был:")
-        print(prompt[:500])
+        return (
+            "[✗] Ошибка при обращении к LLM. Попробуйте позже.",
+            "🔴 Уверенность: неизвестна",
+            []
+        )
+
 
 if __name__ == "__main__":
-    query = input("Введите вопрос: ")
-    search_with_llm(query)
+    q = input("Введите вопрос: ")
+    ans, conf, srcs = generate_answer(q)
+    print(f"\n🔍 Ответ ({conf}):\n{ans}\n")
+    if srcs:
+        print("📚 Использованные источники:")
+        for s in srcs:
+            print(f"- {s}")
+
+

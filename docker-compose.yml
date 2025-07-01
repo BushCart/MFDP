@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  askwise:
+    build: .
+    ports:
+      - "7860:7860"
+    volumes:
+      - ./:/app   # чтобы менять код и данные без пересборки
+    # Чтобы контейнер мог достучаться до Ollama на хосте (Windows/Mac):
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

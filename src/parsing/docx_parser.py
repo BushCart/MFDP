@@ -3,12 +3,14 @@ from docx.table import Table
 from docx.text.paragraph import Paragraph
 from pathlib import Path
 
+
 def iter_block_items(parent):
     for child in parent.element.body.iterchildren():
         if child.tag.endswith("}p"):
             yield Paragraph(child, parent)
         elif child.tag.endswith("}tbl"):
             yield Table(child, parent)
+
 
 def parse_docx(path: str) -> list[dict]:
     doc = Document(path)
