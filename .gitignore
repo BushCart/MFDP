@@ -1,8 +1,8 @@
 #*.jsonl
 #*.pkl
 #*.index
-parsed/
-embeddings/
+#parsed/
+#embeddings/
 #vector_store/
 __pycache__/
 .venv/
