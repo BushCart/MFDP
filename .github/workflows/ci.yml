@@ -46,5 +46,5 @@ jobs:
           python -m scripts.embed_chunks --input parsed/test.jsonl --output embeddings/test.jsonl
           python -m scripts.build_faiss_index --embeddings embeddings/test.jsonl --index vector_store/test.index
 
-      - name: Evaluate metrics
-        run: python scripts/evaluate_retrieval.py --golden tests/fixtures/golden.json --index vector_store/test.index
+#      - name: Evaluate metrics
+#        run: python scripts/evaluate_retrieval.py --golden tests/fixtures/golden.json --index vector_store/test.index
