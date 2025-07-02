@@ -1,6 +1,3 @@
-import pytest
-pytest.skip("Пропускаем rerank-тесты в предзащите", allow_module_level=True)
-
 from scripts.query_engine_llm import rerank
 
 def test_rerank_outputs_scores():
