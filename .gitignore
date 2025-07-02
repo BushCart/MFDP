@@ -1,7 +1,6 @@
 *.jsonl
 *.pkl
 *.index
-data/
 parsed/
 embeddings/
 vector_store/
